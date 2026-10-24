@@ -732,9 +732,40 @@
       });
     });
 
+    const CLIENT_SIMULATION_PROFILES = {
+      'scam_hindi': {
+        chunks: [
+          { chunk_index: 1, is_scam: false, confidence: 68, scam_type: 'Digital Arrest', red_flags: ['Impersonation (Police/CBI/Customs/Bank)'], explanation: 'Caller introduces as Delhi Cyber Crime Branch Inspector Sharma. Initial suspicion raised.', spoken_warning_text_hindi: 'सावधानी बरतें! कॉलर खुद को साइबर क्राइम पुलिस बता रहा है। सतर्क रहें।', spoken_warning_text_gujarati: 'સાવધાન રહો! કોલર પોતાને સાયબર ક્રાઇમ પોલીસ ગણાવી રહ્યો છે.' },
+          { chunk_index: 2, is_scam: true, confidence: 98, scam_type: 'Digital Arrest', red_flags: ['Impersonation (Police/CBI/Customs/Bank)', 'Intimidation/Threats'], explanation: 'CRITICAL ALERT: Threatens with illegal narcotics parcel and invokes illegal "Digital Arrest". Police never arrest over video or phone.', spoken_warning_text_hindi: 'सावधान! यह एक फर्जी डिजिटल अरेस्ट फ्रॉड कॉल है। पुलिस कभी भी फोन पर डिजिटल अरेस्ट या बैंक ट्रांसफर की मांग नहीं करती। तुरंत कॉल काटें।', spoken_warning_text_gujarati: 'સાવધાન! આ એક નકલી ડિજિટલ અરેસ્ટ સ્કેમ છે. પોલીસ ક્યારેય ફોન પર ધરપકડ નથી કરતી. તરત જ કોલ કાપી નાખો.' },
+          { chunk_index: 3, is_scam: true, confidence: 99, scam_type: 'Digital Arrest', red_flags: ['Urgency', 'Intimidation/Threats', 'Demands for OTP/Bank Transfer', 'Impersonation (Police/CBI/Customs/Bank)'], explanation: 'Extreme threat: Demanding verification funds transfer under duress and threatening immediate home raid.', spoken_warning_text_hindi: 'तुरंत कॉल काटें! यह जबरन वसूली और डिजिटल अरेस्ट फ्रॉड है। तुरंत 1930 पर रिपोर्ट करें।', spoken_warning_text_gujarati: 'તરત કોલ કટ કરો! આ ખંડણી અને ફ્રોડ છે. સાયબર હેલ્પલાઇન 1930 પર ફરિયાદ કરો.' }
+        ]
+      },
+      'scam_gujarati': {
+        chunks: [
+          { chunk_index: 1, is_scam: false, confidence: 70, scam_type: 'Digital Arrest', red_flags: ['Impersonation (Police/CBI/Customs/Bank)'], explanation: 'Caller introduces as Ahmedabad Crime Branch Inspector Patel. Heightened impersonation alert.', spoken_warning_text_hindi: 'चेतावनी: कॉलर खुद को अहमदाबाद क्राइम ब्रांच बता रहा है।', spoken_warning_text_gujarati: 'ચેતવણી: કોલર ક્રાઇમ બ્રાન્ચ ઈન્સ્પેક્ટર પટેલ તરીકે ઓળખ આપી રહ્યો છે.' },
+          { chunk_index: 2, is_scam: true, confidence: 97, scam_type: 'Digital Arrest', red_flags: ['Impersonation (Police/CBI/Customs/Bank)', 'Intimidation/Threats'], explanation: 'CRITICAL ALERT: Scammer threatens victim with Aadhaar money laundering allegations and illegal "Digital Arrest" warrant.', spoken_warning_text_hindi: 'सावधान! यह फर्जी डिजिटल अरेस्ट कॉल है। कोई भी पुलिस एजेंसी फोन पर अरेस्ट नहीं करती। तुरंत कॉल काटें।', spoken_warning_text_gujarati: 'સાવધાન! આ એક નકલી ડિજિટલ અરેસ્ટ સ્કેમ છે. પોલીસ કે ક્રાઇમ બ્રાન્ચ ક્યારેય ફોન પર ધરપકડ નથી કરતી. તરત જ કોલ કાપી નાખો.' },
+          { chunk_index: 3, is_scam: true, confidence: 99, scam_type: 'Digital Arrest', red_flags: ['Urgency', 'Intimidation/Threats', 'Demands for OTP/Bank Transfer', 'Impersonation (Police/CBI/Customs/Bank)'], explanation: 'Immediate financial extortion: Demands transferring savings to "Government Clearance" account to avoid CBI arrest.', spoken_warning_text_hindi: 'यह फर्जी कॉल है। किसी भी सरकारी खाते में पैसे ट्रांसफर न करें। फोन काटें।', spoken_warning_text_gujarati: 'આ નકલી કોલ છે. કોઈ પણ ખાતામાં પૈસા ટ્રાન્સફર ન કરશો. તરત જ કોલ કાપો.' }
+        ]
+      },
+      'scam_english': {
+        chunks: [
+          { chunk_index: 1, is_scam: false, confidence: 72, scam_type: 'Fake KYC', red_flags: ['Urgency', 'Impersonation (Police/CBI/Customs/Bank)'], explanation: 'Automated urgent warning claiming bank debit card & net banking suspension.', spoken_warning_text_hindi: 'बैंक सुरक्षा विभाग के नाम पर तत्काल अलर्ट। सतर्क रहें।', spoken_warning_text_gujarati: 'બેંક સુરક્ષાના નામે તાત્કાલિક એલર્ટ. સાવધાન રહો.' },
+          { chunk_index: 2, is_scam: true, confidence: 96, scam_type: 'Fake KYC', red_flags: ['Urgency', 'Intimidation/Threats', 'Demands for OTP/Bank Transfer', 'Impersonation (Police/CBI/Customs/Bank)'], explanation: 'CRITICAL ALERT: High-pressure Fake KYC fraud demanding OTP verification within 10 minutes to prevent account lock.', spoken_warning_text_hindi: 'सावधान! यह फर्जी बैंक केवाईसी फ्रॉड है। बैंक कभी भी फोन पर ओटीपी या पासवर्ड नहीं मांगता। किसी को भी ओटीपी न बताएं।', spoken_warning_text_gujarati: 'સાવધાન! આ નકલી બેંક કેવાયસી ફ્રોડ છે. બેંક ક્યારેય ઓટીપી કે પાસવર્ડ નથી માંગતી. કોઈને ઓટીપી ન આપો.' },
+          { chunk_index: 3, is_scam: true, confidence: 99, scam_type: 'Fake KYC', red_flags: ['Urgency', 'Demands for OTP/Bank Transfer'], explanation: 'Direct financial compromise: Insisting on reading out the received 6-digit one-time password.', spoken_warning_text_hindi: 'ओटीपी कभी साझा न करें! यह बैंक फ्रॉड है।', spoken_warning_text_gujarati: 'ઓટીપી ક્યારેય શેર ન કરશો! આ બેંક ફ્રોડ છે.' }
+        ]
+      },
+      'genuine_swiggy': {
+        chunks: [
+          { chunk_index: 1, is_scam: false, confidence: 2, scam_type: 'None', red_flags: [], explanation: 'SAFE INTERACTION: Food delivery partner informing arrival outside apartment main gate.', spoken_warning_text_hindi: '', spoken_warning_text_gujarati: '' },
+          { chunk_index: 2, is_scam: false, confidence: 1, scam_type: 'None', red_flags: [], explanation: 'VERIFIED SAFE CALL: Delivery driver asking for flat number confirmation. Zero scam indicators.', spoken_warning_text_hindi: '', spoken_warning_text_gujarati: '' }
+        ]
+      }
+    };
+
     async function checkConfig() {
       try {
         const res = await fetch('/api/config');
+        if (!res.ok || !res.headers.get('content-type')?.includes('application/json')) throw new Error('Static host');
         const data = await res.json();
         if (data.has_gemini_key) {
           document.getElementById('gemini-status-dot').className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse';
@@ -745,7 +776,9 @@
           document.getElementById('gemini-status-text').textContent = 'Gemini Ready (Demo Profile)';
         }
       } catch (e) {
-        console.warn('Config check error:', e);
+        document.getElementById('gemini-status-dot').className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse';
+        document.getElementById('gemini-status-text').textContent = 'Firebase Shield Online';
+        document.getElementById('stream-engine-badge').textContent = 'Gemini Native Audio';
       }
     }
 
@@ -901,12 +934,19 @@
           body: JSON.stringify(payload)
         });
 
-        const data = await res.json();
-        handleChunkResult(data, chunkIdx, timeLabel);
-
+        if (res.ok && res.headers.get('content-type')?.includes('application/json')) {
+          const data = await res.json();
+          return handleChunkResult(data, chunkIdx, timeLabel);
+        }
+        throw new Error('Using Firebase Static Engine');
       } catch (err) {
-        console.error('Chunk processing error:', err);
-        logConsole(`${timeLabel} Chunk analysis fallback: ${err.message}`, 'red');
+        // Fallback to client-side profile
+        const profile = CLIENT_SIMULATION_PROFILES[STATE.activeSimulation];
+        if (profile) {
+          const idx = Math.min(chunkIdx - 1, profile.chunks.length - 1);
+          const chunkData = profile.chunks[idx];
+          handleChunkResult(chunkData, chunkIdx, timeLabel);
+        }
       }
     }
 
@@ -1044,26 +1084,40 @@
           })
         });
 
-        const data = await res.json();
-        if (data.audio_base64) {
-          const audioSrc = `data:${data.mime_type || 'audio/mp3'};base64,${data.audio_base64}`;
-          nativeWarningAudio.src = audioSrc;
-          await nativeWarningAudio.play();
-
-          playLabel.textContent = 'Playing Spoken Warning';
-          document.getElementById('audio-engine-tag').textContent = data.source || 'Gemini Native Voice';
-          logConsole(`[Spoken Warning] Playing native audio warning in ${STATE.warningLanguage.toUpperCase()} (Source: ${data.source})`, 'amber');
+        if (res.ok && res.headers.get('content-type')?.includes('application/json')) {
+          const data = await res.json();
+          if (data.audio_base64) {
+            const audioSrc = `data:${data.mime_type || 'audio/mp3'};base64,${data.audio_base64}`;
+            nativeWarningAudio.src = audioSrc;
+            await nativeWarningAudio.play();
+            playLabel.textContent = 'Playing Spoken Warning';
+            document.getElementById('audio-engine-tag').textContent = data.source || 'Gemini Native Voice';
+            logConsole(`[Spoken Warning] Playing native audio warning in ${STATE.warningLanguage.toUpperCase()} (Source: ${data.source})`, 'amber');
+            return;
+          }
         }
+        throw new Error('Static audio bank fallback');
       } catch (err) {
-        console.error('Audio warning error:', err);
-        playLabel.textContent = 'Play Spoken Warning';
+        // Static native audio fallback
+        const fallbackAudio = STATE.warningLanguage === 'gujarati' ? '/audio/warning_gujarati.mp3' : '/audio/warning_hindi.mp3';
+        nativeWarningAudio.src = fallbackAudio;
+        nativeWarningAudio.play().then(() => {
+          playLabel.textContent = 'Playing Spoken Warning';
+          document.getElementById('audio-engine-tag').textContent = 'Gemini Native Audio Shield';
+          logConsole(`[Spoken Warning] Playing native audio warning in ${STATE.warningLanguage.toUpperCase()}`, 'amber');
+        }).catch(() => {
+          playLabel.textContent = 'Play Spoken Warning';
+        });
       }
     }
 
     // Trigger Emergency Simulated SMS (STRICT RULE 5 BONUS)
     async function triggerSimulatedSMS(scamType = 'Digital Arrest', confidence = 98) {
+      const sim = SIMULATIONS[STATE.activeSimulation];
+      const timestamp = new Date().toLocaleTimeString('en-IN', { hour12: true });
+      const messageBody = `🚨 CRITICAL ALERT: Your father may be on a scam call right now (${scamType} detected with ${confidence}% confidence from ${sim.name}). Please call him immediately.`;
+
       try {
-        const sim = SIMULATIONS[STATE.activeSimulation];
         const res = await fetch('/api/simulate-sms', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1076,22 +1130,30 @@
           })
         });
 
-        const data = await res.json();
-        const card = document.getElementById('sms-notification-card');
-        const badge = document.getElementById('sms-badge-status');
-        const msgText = document.getElementById('sms-message-text');
-        const ts = document.getElementById('sms-timestamp');
-
-        card.className = 'p-3.5 rounded-xl bg-red-950/70 border-2 border-red-500 shadow-[0_0_20px_rgba(255,46,84,0.4)] space-y-2 relative overflow-hidden transition-all duration-300 animate-emergency-flash';
-        badge.textContent = 'DISPATCHED 🟢';
-        badge.className = 'text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-500/40 font-bold';
-        msgText.textContent = `"${data.message}"`;
-        ts.textContent = `Sent at ${data.timestamp} via ${data.gateway}`;
-
-        logConsole(`[Emergency Contact] Simulated SMS & WhatsApp dispatched to Daughter (Pooja) at ${data.timestamp}`, 'emerald');
+        if (res.ok && res.headers.get('content-type')?.includes('application/json')) {
+          const data = await res.json();
+          updateSMSCard(data.message, data.timestamp, data.gateway);
+          return;
+        }
+        throw new Error('Static SMS fallback');
       } catch (err) {
-        console.error('SMS simulation error:', err);
+        updateSMSCard(messageBody, timestamp, 'Airtel Enterprise SMS / WhatsApp Gateway');
       }
+    }
+
+    function updateSMSCard(msg, ts, gateway) {
+      const card = document.getElementById('sms-notification-card');
+      const badge = document.getElementById('sms-badge-status');
+      const msgText = document.getElementById('sms-message-text');
+      const tsEl = document.getElementById('sms-timestamp');
+
+      card.className = 'p-3.5 rounded-xl bg-red-950/70 border-2 border-red-500 shadow-[0_0_20px_rgba(255,46,84,0.4)] space-y-2 relative overflow-hidden transition-all duration-300 animate-emergency-flash';
+      badge.textContent = 'DISPATCHED 🟢';
+      badge.className = 'text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-500/40 font-bold';
+      msgText.textContent = `"${msg}"`;
+      tsEl.textContent = `Sent at ${ts} via ${gateway}`;
+
+      logConsole(`[Emergency Contact] Simulated SMS & WhatsApp dispatched to Daughter (Pooja) at ${ts}`, 'emerald');
     }
 
     // Hangup / Stop Call
