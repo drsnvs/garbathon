@@ -5,13 +5,18 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "test": "node --test tests/**/*.test.js",
+    "test:verbose": "node --test --test-reporter=spec tests/**/*.test.js"
   },
   "dependencies": {
     "@google/genai": "^2.31.0",
     "@google/generative-ai": "^0.24.0",
+    "compression": "^1.8.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
-    "express": "^4.21.2"
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "helmet": "^8.0.0"
   }
 }

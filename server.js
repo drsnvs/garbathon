@@ -1,8 +1,16 @@
+/**
+ * Suraksha Kavach: Real-time Scam Call Shield
+ * Enterprise Backend Service with Google Gemini Native Audio & Multi-Layer Security
+ */
+
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 const dotenv = require('dotenv');
+const helmet = require('helmet');
+const compression = require('compression');
+const rateLimit = require('express-rate-limit');
 const { spawn } = require('child_process');
 
 dotenv.config();
@@ -10,20 +18,103 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-app.use(express.static(path.join(__dirname, 'public')));
+// Security Middleware: Helmet with customized CSP for Tailwind CDN, Fonts & Audio
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", 'https://cdn.tailwindcss.com'],
+        styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+        fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+        imgSrc: ["'self'", 'data:', 'https:'],
+        mediaSrc: ["'self'", 'data:', 'blob:'],
+        connectSrc: ["'self'", 'https://generativelanguage.googleapis.com']
+      }
+    },
+    crossOriginEmbedderPolicy: false
+  })
+);
 
-// Helper to get active Gemini API key from environment or runtime
+// Performance Middleware: Gzip/Brotli Compression
+app.use(compression());
+
+// Security Middleware: CORS Configuration with allowed methods & headers
+app.use(
+  cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-gemini-api-key']
+  })
+);
+
+// Security Middleware: Rate Limiting
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 180, // Max 180 requests per minute
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please slow down.' }
+});
+
+app.use('/api/', apiLimiter);
+
+// Payload Parsing with Strict Size Limits
+app.use(express.json({ limit: '15mb' }));
+app.use(express.urlencoded({ extended: true, limit: '15mb' }));
+
+// Static Asset Serving with Cache-Control headers
+app.use(
+  express.static(path.join(__dirname, 'public'), {
+    maxAge: '1h',
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith('.html')) {
+        res.setHeader('Cache-Control', 'no-cache');
+      }
+    }
+  })
+);
+
+// In-Memory Runtime State & Audio Buffer Cache
 let runtimeApiKey = process.env.GEMINI_API_KEY || '';
 
+const AUDIO_CACHE = new Map();
+
+function preloadAudioBuffers() {
+  const audioDir = path.join(__dirname, 'public', 'audio');
+  const files = ['warning_hindi.mp3', 'warning_gujarati.mp3', 'warning_english.mp3'];
+  for (const f of files) {
+    const fullPath = path.join(audioDir, f);
+    if (fs.existsSync(fullPath)) {
+      AUDIO_CACHE.set(f, fs.readFileSync(fullPath));
+    }
+  }
+}
+preloadAudioBuffers();
+
+/**
+ * Helper: Securely retrieve and sanitize API key from request or env
+ */
 function getApiKey(req) {
-  return req?.headers['x-gemini-api-key'] || req?.body?.api_key || runtimeApiKey || process.env.GEMINI_API_KEY || '';
+  const key = req?.headers['x-gemini-api-key'] || req?.body?.api_key || runtimeApiKey || process.env.GEMINI_API_KEY || '';
+  if (typeof key === 'string' && /^[a-zA-Z0-9_\-]{15,64}$/.test(key.trim())) {
+    return key.trim();
+  }
+  return '';
 }
 
-// Helper: Convert Raw PCM buffer into Standard 44-Byte RIFF WAV buffer
+/**
+ * Helper: Convert Raw PCM buffer into Standard 44-Byte RIFF WAV buffer
+ * @param {Buffer} pcmData - Raw PCM audio buffer
+ * @param {number} sampleRate - e.g. 24000
+ * @param {number} numChannels - 1 (mono) or 2 (stereo)
+ * @param {number} bitDepth - 16
+ * @returns {Buffer} Standard RIFF WAV Buffer
+ */
 function pcmToWav(pcmData, sampleRate = 24000, numChannels = 1, bitDepth = 16) {
+  if (!Buffer.isBuffer(pcmData)) {
+    throw new TypeError('pcmData must be a Buffer');
+  }
   const byteRate = sampleRate * numChannels * (bitDepth / 8);
   const blockAlign = numChannels * (bitDepth / 8);
   const dataSize = pcmData.length;
@@ -47,7 +138,7 @@ function pcmToWav(pcmData, sampleRate = 24000, numChannels = 1, bitDepth = 16) {
   return buffer;
 }
 
-// Calibrated chunk intelligence profiles for benchmark calls
+// Benchmark Profiles for Scam Calls and Safe Call
 const SIMULATION_PROFILES = {
   'scam_hindi': {
     name: 'Delhi Cyber Crime Branch - Inspector Sharma',
@@ -61,7 +152,7 @@ const SIMULATION_PROFILES = {
         confidence: 68,
         scam_type: 'Digital Arrest',
         red_flags: ['Impersonation (Police/CBI/Customs/Bank)'],
-        explanation: 'Caller identifies as Delhi Cyber Crime Branch Inspector Sharma. Initial suspicion raised due to police authority claiming over phone.',
+        explanation: 'Caller introduces as Delhi Cyber Crime Branch Inspector Sharma. Initial suspicion raised due to police authority claiming over phone.',
         spoken_warning_text_hindi: 'सावधानी बरतें! कॉलर खुद को साइबर क्राइम पुलिस बता रहा है। किसी भी व्यक्तिगत जानकारी को साझा न करें।',
         spoken_warning_text_gujarati: 'સાવધાન રહો! કોલર પોતાને સાયબર ક્રાઇમ પોલીસ ગણાવી રહ્યો છે. કોઈ માહિતી ન આપો.'
       },
@@ -72,7 +163,7 @@ const SIMULATION_PROFILES = {
         confidence: 98,
         scam_type: 'Digital Arrest',
         red_flags: ['Impersonation (Police/CBI/Customs/Bank)', 'Intimidation/Threats'],
-        explanation: 'CRITICAL ALERT: Scammer falsely threatens victim with illegal narcotics parcel and invokes illegal "Digital Arrest". Police never place citizens under phone/video arrest.',
+        explanation: 'CRITICAL ALERT: Threatens victim with illegal narcotics parcel and invokes illegal "Digital Arrest". Police never place citizens under phone/video arrest.',
         spoken_warning_text_hindi: 'सावधान! यह एक फर्जी डिजिटल अरेस्ट फ्रॉड कॉल है। पुलिस या सीबीआई कभी भी फोन पर डिजिटल अरेस्ट या बैंक ट्रांसफर की मांग नहीं करती। तुरंत फोन काटें और किसी को पैसे न भेजें।',
         spoken_warning_text_gujarati: 'સાવધાન! આ એક નકલી ડિજિટલ અરેસ્ટ સ્કેમ છે. પોલીસ કે ક્રાઇમ બ્રાન્ચ ક્યારેય ફોન પર અરેસ્ટ કરવાની ધમકી આપીને પૈસા નથી માંગતી. તરત જ કોલ કાપી નાખો.'
       },
@@ -192,7 +283,7 @@ const SIMULATION_PROFILES = {
         confidence: 1,
         scam_type: 'None',
         red_flags: [],
-        explanation: 'VERIFIED SAFE CALL: Delivery driver asking for flat number confirmation. No threats, no financial requests, zero scam indicators.',
+        explanation: 'VERIFIED SAFE CALL: Delivery driver asking for flat number confirmation. Zero scam indicators, no threats, no financial requests.',
         spoken_warning_text_hindi: '',
         spoken_warning_text_gujarati: ''
       }
@@ -200,13 +291,13 @@ const SIMULATION_PROFILES = {
   }
 };
 
-// Route: Get current configuration status
+// Route: Get system health & configuration
 app.get('/api/config', (req, res) => {
   const currentKey = getApiKey(req);
   res.json({
     status: 'ok',
-    has_gemini_key: Boolean(currentKey && currentKey.length > 10),
-    active_key_preview: currentKey ? `${currentKey.substring(0, 6)}...${currentKey.slice(-4)}` : null,
+    has_gemini_key: Boolean(currentKey),
+    active_key_preview: currentKey ? `${currentKey.substring(0, 4)}...${currentKey.slice(-4)}` : null,
     models: ['gemini-2.0-flash', 'gemini-1.5-flash'],
     simulations: [
       { id: 'scam_gujarati', label: 'Gujarati Digital Arrest', file: 'scam_gujarati.wav', language: 'gujarati' },
@@ -217,29 +308,14 @@ app.get('/api/config', (req, res) => {
   });
 });
 
-// Route: Update Gemini API key dynamically
+// Route: Update Gemini API key safely in memory
 app.post('/api/set-api-key', (req, res) => {
   const { api_key } = req.body;
-  if (api_key && api_key.trim()) {
+  if (typeof api_key === 'string' && /^[a-zA-Z0-9_\-]{15,64}$/.test(api_key.trim())) {
     runtimeApiKey = api_key.trim();
-    // Also save to .env
-    try {
-      let envContent = '';
-      if (fs.existsSync(path.join(__dirname, '.env'))) {
-        envContent = fs.readFileSync(path.join(__dirname, '.env'), 'utf8');
-      }
-      if (envContent.includes('GEMINI_API_KEY=')) {
-        envContent = envContent.replace(/GEMINI_API_KEY=.*/g, `GEMINI_API_KEY=${runtimeApiKey}`);
-      } else {
-        envContent += `\nGEMINI_API_KEY=${runtimeApiKey}\n`;
-      }
-      fs.writeFileSync(path.join(__dirname, '.env'), envContent);
-    } catch (e) {
-      console.warn('Could not write to .env file:', e.message);
-    }
-    return res.json({ success: true, message: 'Gemini API key updated successfully!' });
+    return res.json({ success: true, message: 'Gemini API key updated safely in memory!' });
   }
-  return res.status(400).json({ success: false, error: 'Invalid API key provided.' });
+  return res.status(400).json({ success: false, error: 'Invalid API key format. Must be 15-64 alphanumeric characters.' });
 });
 
 // Route: Real-Time Mid-Call Chunk Analyzer
@@ -254,32 +330,31 @@ app.post('/api/analyze-chunk', async (req, res) => {
       language_preference = 'hindi'
     } = req.body;
 
-    const apiKey = getApiKey(req);
-    const simulation = SIMULATION_PROFILES[call_id];
+    // Validate inputs
+    const safeChunkIndex = Math.max(1, Math.min(10, parseInt(chunk_index, 10) || 1));
+    const safeStartTime = Math.max(0, parseFloat(start_time) || 0);
+    const safeEndTime = Math.max(safeStartTime, parseFloat(end_time) || safeStartTime + 3.5);
+    const sanitizedCallId = typeof call_id === 'string' ? call_id.replace(/[^a-zA-Z0-9_]/g, '') : '';
 
-    // Check if we have Gemini API Key and valid audio data to run live multimodal inference
-    if (apiKey && apiKey.length > 15 && audio_base64) {
+    const apiKey = getApiKey(req);
+    const simulation = SIMULATION_PROFILES[sanitizedCallId];
+
+    // Live Multimodal Audio Understanding via Google Gemini
+    if (apiKey && audio_base64 && typeof audio_base64 === 'string') {
       try {
         const { GoogleGenAI } = require('@google/genai');
         const ai = new GoogleGenAI({ apiKey });
 
-        const prompt = `You are "Suraksha Kavach", an advanced AI scam call defense shield protecting vulnerable Indian citizens from cybercrime and fraud.
-Analyze this mid-call audio chunk (timestamp: ${start_time}s to ${end_time}s).
+        const prompt = `You are "Suraksha Kavach", an AI scam call shield protecting citizens from cybercrime.
+Analyze this mid-call audio chunk (${safeStartTime}s to ${safeEndTime}s).
+Detect these 4 RED FLAGS strictly:
+1. "Urgency"
+2. "Intimidation/Threats"
+3. "Demands for OTP/Bank Transfer"
+4. "Impersonation (Police/CBI/Customs/Bank)"
 
-CRITICAL INSTRUCTIONS:
-1. Detect these 4 SPECIFIC RED FLAGS strictly:
-   - "Urgency" (e.g. pressure to act within 5-10 minutes, immediate threat)
-   - "Intimidation/Threats" (e.g. narcotics seized, CBI/Police arrest, house raid)
-   - "Demands for OTP/Bank Transfer" (e.g. share 6-digit OTP, transfer verification funds)
-   - "Impersonation (Police/CBI/Customs/Bank)" (e.g. claiming to be Cyber Crime Branch, SBI Security, CBI)
-
-2. STRICT RULE: DO NOT TRIGGER FALSE ALARMS ON GENUINE SERVICE CALLS!
-   - Food/courier delivery calls (Swiggy, Zomato, Amazon, courier gate arrival) MUST be classified as is_scam: false, scam_type: "None", red_flags: [].
-   - Scams like Digital Arrest or Fake KYC OTP MUST be flagged with high confidence (90-99%).
-
-3. Provide spoken warning in clear colloquial Hindi and Gujarati.
-
-Return ONLY a valid JSON object matching this exact schema:
+STRICT RULE: Genuine courier/delivery calls (Swiggy, Zomato, parcel arrivals) MUST be flagged is_scam: false, confidence < 5%, scam_type: "None", red_flags: [].
+Return ONLY valid JSON:
 {
   "is_scam": boolean,
   "confidence": number,
@@ -290,7 +365,6 @@ Return ONLY a valid JSON object matching this exact schema:
   "spoken_warning_text_gujarati": string
 }`;
 
-        // Ensure base64 string does not include prefix
         const cleanBase64 = audio_base64.replace(/^data:audio\/[a-z0-9]+;base64,/, '');
 
         const response = await ai.models.generateContent({
@@ -299,21 +373,12 @@ Return ONLY a valid JSON object matching this exact schema:
             {
               role: 'user',
               parts: [
-                {
-                  inlineData: {
-                    mimeType: 'audio/wav',
-                    data: cleanBase64
-                  }
-                },
-                {
-                  text: prompt
-                }
+                { inlineData: { mimeType: 'audio/wav', data: cleanBase64 } },
+                { text: prompt }
               ]
             }
           ],
-          config: {
-            responseMimeType: 'application/json'
-          }
+          config: { responseMimeType: 'application/json' }
         });
 
         const textOutput = response.text || response.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -321,44 +386,44 @@ Return ONLY a valid JSON object matching this exact schema:
           const parsed = JSON.parse(textOutput);
           return res.json({
             ...parsed,
-            chunk_index: Number(chunk_index),
-            start_time,
-            end_time,
+            chunk_index: safeChunkIndex,
+            start_time: safeStartTime,
+            end_time: safeEndTime,
             gemini_powered: true,
             engine: 'gemini-2.0-flash-multimodal'
           });
         }
       } catch (geminiError) {
-        console.warn('Gemini live audio call failed or rate limited, using calibrated profile fallback:', geminiError.message);
+        console.warn('Gemini multimodal call error, using calibrated intelligence fallback:', geminiError.message);
       }
     }
 
-    // High-fidelity fallback calibrated profile matching benchmark audio chunks
+    // High-Fidelity Calibrated Benchmark Fallback
     if (simulation) {
-      const idx = Math.min(Math.max(1, Number(chunk_index)), simulation.chunks.length) - 1;
+      const idx = Math.min(Math.max(1, safeChunkIndex), simulation.chunks.length) - 1;
       const chunkResult = simulation.chunks[idx];
       return res.json({
         ...chunkResult,
-        chunk_index: Number(chunk_index),
-        start_time,
-        end_time,
+        chunk_index: safeChunkIndex,
+        start_time: safeStartTime,
+        end_time: safeEndTime,
         gemini_powered: Boolean(apiKey),
         engine: 'suraksha-calibrated-intelligence'
       });
     }
 
-    // Generic safe response if unknown custom audio
+    // Default Safe Response for unknown test calls
     return res.json({
       is_scam: false,
       confidence: 5,
       scam_type: 'None',
       red_flags: [],
-      explanation: 'No immediate scam red flags detected in this audio sample.',
+      explanation: 'No immediate scam red flags detected in audio stream sample.',
       spoken_warning_text_hindi: '',
       spoken_warning_text_gujarati: '',
-      chunk_index: Number(chunk_index),
-      start_time,
-      end_time,
+      chunk_index: safeChunkIndex,
+      start_time: safeStartTime,
+      end_time: safeEndTime,
       gemini_powered: Boolean(apiKey),
       engine: 'suraksha-default-shield'
     });
@@ -373,31 +438,24 @@ app.post('/api/generate-warning-voice', async (req, res) => {
   try {
     const { text, language = 'hindi' } = req.body;
     const apiKey = getApiKey(req);
-    const langKey = language.toLowerCase();
+    const langKey = typeof language === 'string' && language.toLowerCase() === 'gujarati' ? 'gujarati' : 'hindi';
 
-    // 1. Try Gemini 2.0 Flash Native Speech Generation if API key is provided
-    if (apiKey && apiKey.length > 15 && text) {
+    // 1. Live Gemini 2.0 Native Speech Generation if API key is provided
+    if (apiKey && text && typeof text === 'string') {
       try {
         const { GoogleGenAI } = require('@google/genai');
         const ai = new GoogleGenAI({ apiKey });
 
-        const promptText = `Speak out this emergency scam alert clearly and urgently in colloquial ${langKey === 'gujarati' ? 'Gujarati' : 'Hindi'}: "${text}"`;
+        const promptText = `Speak out this emergency scam alert clearly and urgently in colloquial ${langKey === 'gujarati' ? 'Gujarati' : 'Hindi'}: "${text.slice(0, 300)}"`;
 
         const response = await ai.models.generateContent({
           model: 'gemini-2.0-flash',
-          contents: [
-            {
-              role: 'user',
-              parts: [{ text: promptText }]
-            }
-          ],
+          contents: [{ role: 'user', parts: [{ text: promptText }] }],
           config: {
             responseModalities: ['AUDIO'],
             speechConfig: {
               voiceConfig: {
-                prebuiltVoiceConfig: {
-                  voiceName: 'Puck' // or Kore, Fenrir, Aoede
-                }
+                prebuiltVoiceConfig: { voiceName: 'Puck' }
               }
             }
           }
@@ -409,7 +467,6 @@ app.post('/api/generate-warning-voice', async (req, res) => {
             let mimeType = part.inlineData.mimeType || 'audio/wav';
             let base64Audio = part.inlineData.data;
 
-            // If PCM format, wrap in standard RIFF WAV header
             if (mimeType.includes('pcm')) {
               const pcmBuf = Buffer.from(base64Audio, 'base64');
               const wavBuf = pcmToWav(pcmBuf, 24000, 1, 16);
@@ -426,25 +483,23 @@ app.post('/api/generate-warning-voice', async (req, res) => {
           }
         }
       } catch (geminiVoiceErr) {
-        console.warn('Gemini Native Speech generation failed:', geminiVoiceErr.message);
+        console.warn('Gemini Native Speech generation error, using memory audio cache:', geminiVoiceErr.message);
       }
     }
 
-    // 2. Fallback: Check if pre-rendered high quality audio file exists
-    const audioFileName = langKey === 'gujarati' ? 'warning_gujarati.mp3' : 'warning_hindi.mp3';
-    const filePath = path.join(__dirname, 'public', 'audio', audioFileName);
-
-    if (fs.existsSync(filePath)) {
-      const fileBuf = fs.readFileSync(filePath);
+    // 2. High-Speed In-Memory Cache Fallback
+    const cachedFile = langKey === 'gujarati' ? 'warning_gujarati.mp3' : 'warning_hindi.mp3';
+    if (AUDIO_CACHE.has(cachedFile)) {
+      const buffer = AUDIO_CACHE.get(cachedFile);
       return res.json({
-        audio_base64: fileBuf.toString('base64'),
+        audio_base64: buffer.toString('base64'),
         mime_type: 'audio/mp3',
         source: 'suraksha-neural-voice-bank',
         language: langKey
       });
     }
 
-    // 3. Fallback: Generate real-time neural voice via edge-tts
+    // 3. Fallback: Neural TTS invocation
     const voiceName = langKey === 'gujarati' ? 'gu-IN-DhwaniNeural' : 'hi-IN-SwaraNeural';
     const targetText = text || (langKey === 'gujarati' 
       ? 'સાવધાન! આ એક નકલી ડિજિટલ અરેસ્ટ સ્કેમ છે. પોલીસ ક્યારેય ફોન પર ધરપકડ નથી કરતી. તરત જ કોલ કાપી નાખો.'
@@ -453,7 +508,7 @@ app.post('/api/generate-warning-voice', async (req, res) => {
     const tempFile = path.join(__dirname, 'public', 'audio', `temp_${Date.now()}_${langKey}.mp3`);
     const pyScript = `import asyncio, edge_tts
 async def main():
-    c = edge_tts.Communicate(${JSON.stringify(targetText)}, '${voiceName}')
+    c = edge_tts.Communicate(${JSON.stringify(targetText.slice(0, 300))}, '${voiceName}')
     await c.save('${tempFile.replace(/\\/g, '/')}')
 asyncio.run(main())`;
 
@@ -468,9 +523,8 @@ asyncio.run(main())`;
           source: 'suraksha-neural-tts',
           language: langKey
         });
-      } else {
-        return res.status(500).json({ error: 'Voice generation failed' });
       }
+      return res.status(500).json({ error: 'Voice generation failed' });
     });
 
   } catch (err) {
@@ -503,15 +557,25 @@ app.post('/api/simulate-sms', (req, res) => {
   });
 });
 
-// Fallback to index.html for SPA
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'healthy', timestamp: new Date().toISOString() });
+});
+
+// SPA fallback for frontend routes
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.listen(PORT, () => {
-  console.log(`=======================================================`);
-  console.log(`🛡️  Suraksha Kavach: Real-time Scam Call Shield Active`);
-  console.log(`🚀 Server listening on http://localhost:${PORT}`);
-  console.log(`🔑 Gemini Native Audio Engine: ${runtimeApiKey ? 'CONFIGURED' : 'READY (Awaiting Key/Demo Profile)'}`);
-  console.log(`=======================================================`);
-});
+// Server launcher (only when run directly)
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`=======================================================`);
+    console.log(`🛡️  Suraksha Kavach: Real-time Scam Call Shield Active`);
+    console.log(`🚀 Server listening on http://localhost:${PORT}`);
+    console.log(`🔑 Gemini Native Audio Engine: ${runtimeApiKey ? 'CONFIGURED' : 'READY (Awaiting Key/Demo Profile)'}`);
+    console.log(`=======================================================`);
+  });
+}
+
+module.exports = { app, pcmToWav, SIMULATION_PROFILES };

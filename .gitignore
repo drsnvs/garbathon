@@ -4,4 +4,7 @@ node_modules/
 .DS_Store
 Thumbs.db
 .firebase/
+.agents/
+skills-lock.json
+
 
