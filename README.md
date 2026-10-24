@@ -114,13 +114,50 @@ Visit **[http://localhost:3000](http://localhost:3000)** in your browser.
 
 ---
 
+## 🔮 Future Roadmap & WebRTC Application-Level Integration
+
+To scale Suraksha Kavach from mid-call chunk evaluation into an enterprise-grade, telecom-integrated live call interceptor, the following application-level WebRTC and AI enhancements are planned for future implementation:
+
+### 1. Application-Level WebRTC Real-Time MediaStream Pipeline
+* **Zero-Latency In-Call Audio Tapping (`MediaStreamTrackProcessor`)**:
+  - Integrate WebRTC's `RTCPeerConnection` with WebCodecs `MediaStreamTrackProcessor` at the browser and native Android/iOS WebView layer to capture live PCM audio frames directly from incoming WebRTC/VoIP calls without slicing or buffer delay.
+  - Pipe live 16kHz/24kHz audio packets over an encrypted WebRTC DataChannel or high-throughput WebSocket directly into **Gemini 2.0 Live Multimodal Streaming API**, reducing threat detection latency from 3.5 seconds to **sub-250 milliseconds**.
+
+* **Dual-Track Audio Mixer & Scammer Mute Injection**:
+  - Implement a client-side Web Audio & WebRTC `GainNode` audio routing matrix.
+  - Upon detecting a scam red flag mid-call, the system automatically ducks the scammer’s incoming voice volume to 0% and injects Gemini's vernacular spoken alert into the victim's local headset/speaker.
+  - Simultaneously plays an automated carrier hold message to the scammer (*"Call verification in progress under Cyber Cell safety protocol"*), breaking their psychological pressure tactics.
+
+* **Peer-to-Peer Family SOS Audio Bridge (Emergency Intervene)**:
+  - Establish an automated peer-to-peer WebRTC audio call between the victim's phone and the saved emergency contact (**Daughter Pooja**).
+  - Allows the family member to instantly listen in to the suspect call with one tap or join as a 3-way conference bridge to pull their vulnerable parent out of the trap immediately.
+
+* **SIP / IMS Carrier Gateway Interoperability**:
+  - Connect with telecom IMS and VoIP infrastructure (e.g., FreeSWITCH, Asterisk, Kamailio, Twilio SIP/WebRTC media gateways) to perform network-level real-time audio defense before calls reach consumer handsets.
+
+---
+
+### 2. Next-Generation AI & Security Enhancements
+* **Deepfake & Voice Clone Biometric Detection**:
+  - Acoustic forensics to detect AI-generated voice clones used in "kidnapped relative" and "urgent family emergency" extortion calls.
+* **On-Device Offline Edge SLM (Gemini Nano)**:
+  - Localized quantized inference directly on mobile hardware to provide real-time protection in rural areas with poor internet connectivity.
+* **1930 National Cybercrime Portal Direct API Dispatch**:
+  - One-tap generation of digital evidence dossiers (transcripts, timestamps, red flag audio snippets) directly sent to the Indian Cyber Crime Coordination Centre (I4C).
+* **Multi-Dialect Indian Vernacular Expansion**:
+  - Native speech generation in Marathi, Bengali, Tamil, Telugu, Kannada, and Punjabi.
+
+---
+
 ## 🛠️ Tech Stack
 - **Backend**: Node.js, Express, `@google/genai`, `@google/generative-ai`, CORS, Dotenv
 - **AI Core**: Google Gemini 2.0 Flash (Multimodal Audio Understanding & Native Speech Generation)
 - **Frontend**: Single-Page Cyber Defense UI, Tailwind CSS, HTML5 Canvas, Web Audio API
 - **Emergency Gateway**: Simulated Telco SMS & WhatsApp Dispatch Sandbox
+- **Real-Time Protocol (Roadmap)**: WebRTC `RTCPeerConnection`, `MediaStreamTrackProcessor`, Audio Worklets
 
 ---
 
 ## 📜 License
 MIT License. Built for the Hackathon.
+
